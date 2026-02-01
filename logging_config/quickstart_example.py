@@ -1,11 +1,11 @@
 """
 Quick Start Example - Using the Journey Logger
 
-This file demonstrates how to quickly implement journey logging
-using the FINAL action-plan contract.
+This example demonstrates the REAL, CORRECT flow
+using a hardcoded query and hardcoded response.
 
-RUN THIS EXAMPLE:
-    python logging_config/quick_start.py
+There is NO simulated error here.
+If this works, your main() will work.
 """
 
 import time
@@ -15,17 +15,16 @@ from logger_utils import LogAnalyzer
 
 def example_journey_simulation():
     """
-    Simulate a complete query journey to demonstrate logging.
+    Simulate a complete successful query journey.
     """
 
     print("\n" + "=" * 80)
-    print("JOURNEY LOGGER - QUICK START EXAMPLE")
+    print("JOURNEY LOGGER - QUICK START EXAMPLE (SUCCESS FLOW)")
     print("=" * 80 + "\n")
 
-    # Initialize logger
     logger = get_journey_logger()
 
-    # Simulate a user query
+    # Hardcoded user query
     user_query = "Show me all active leave policies for Q1 2026"
 
     # ----------------------------
@@ -35,22 +34,22 @@ def example_journey_simulation():
     time.sleep(0.5)
 
     # ----------------------------
-    # STAGE 1: Intent Detection
+    # STAGE 1: INTENT DETECTION
     # ----------------------------
-    print("⏳ Simulating intent detection...")
-    time.sleep(1)
+    print("⏳ Intent detection...")
+    time.sleep(0.5)
 
-    detected_intent = "SEARCH"
+    intent = "SEARCH"
     logger.log_intent_detection(
         journey_id=journey_id,
-        intent=detected_intent,
+        intent=intent,
         confidence=0.95
     )
 
     # ----------------------------
-    # STAGE 2: RAG Retrieval
+    # STAGE 2: RAG RETRIEVAL
     # ----------------------------
-    print("⏳ Simulating RAG retrieval...")
+    print("⏳ RAG retrieval...")
     time.sleep(0.5)
 
     retrieved_docs = [
@@ -67,12 +66,11 @@ def example_journey_simulation():
     )
 
     # ----------------------------
-    # STAGE 3: Action Plan Generation
+    # STAGE 3: ACTION PLAN
     # ----------------------------
-    print("⏳ Generating action plan...")
+    print("⏳ Action plan generation...")
     time.sleep(0.5)
 
-    # ✅ FINAL CORRECT ACTION PLAN (NO tool FIELD)
     action_plan = {
         "path": "Record/",
         "method": "GET",
@@ -91,38 +89,25 @@ def example_journey_simulation():
     )
 
     # ----------------------------
-    # STAGE 4: Tool Execution
+    # STAGE 4: TOOL EXECUTION
     # ----------------------------
-    print("⏳ Executing tool...")
+    print("⏳ Tool execution...")
     time.sleep(0.5)
 
     logger.log_tool_execution_start(
         journey_id=journey_id,
-        tool_name="search_records",  # derived internally in real flow
+        tool_name="search_records",
         arguments={"action_plan": action_plan}
     )
 
     time.sleep(1.5)
 
     search_results = {
-        "status": "success",
         "records_found": 3,
         "records": [
-            {
-                "id": "REC-001",
-                "title": "Q1 Leave Policy 2026",
-                "last_modified": "2026-01-15"
-            },
-            {
-                "id": "REC-002",
-                "title": "Q1 Updated Guidelines",
-                "last_modified": "2026-01-10"
-            },
-            {
-                "id": "REC-003",
-                "title": "Q1 Holiday Calendar",
-                "last_modified": "2026-01-05"
-            }
+            {"id": "REC-001", "title": "Q1 Leave Policy 2026"},
+            {"id": "REC-002", "title": "Q1 Updated Guidelines"},
+            {"id": "REC-003", "title": "Q1 Holiday Calendar"}
         ]
     }
 
@@ -135,9 +120,9 @@ def example_journey_simulation():
     )
 
     # ----------------------------
-    # STAGE 5: Journey Completion
+    # STAGE 5: JOURNEY COMPLETION
     # ----------------------------
-    print("⏳ Completing journey...")
+    print("⏳ Journey completion...")
     time.sleep(0.5)
 
     final_response = {
@@ -156,54 +141,18 @@ def example_journey_simulation():
     print("JOURNEY COMPLETED SUCCESSFULLY!")
     print("=" * 80)
     print(f"✅ Journey ID: {journey_id}")
-    print("📁 Check logs/ directory for generated files\n")
+    print("📁 Check logs/ directory\n")
 
-    return journey_id
-
-
-def example_with_error():
-    """
-    Demonstrate error logging.
-    """
-
-    print("\n" + "=" * 80)
-    print("EXAMPLE 2: ERROR HANDLING")
-    print("=" * 80 + "\n")
-
-    logger = get_journey_logger()
-
-    user_query = "Invalid operation that will fail"
-    journey_id = logger.start_journey(user_query)
-    time.sleep(0.5)
-
-    print("⏳ Simulating an error...")
-    time.sleep(0.5)
-
-    logger.log_error(
-        journey_id=journey_id,
-        error_type="ValidationError",
-        error_message="Invalid action plan structure",
-        stage="action_plan_generation"
-    )
-
-    logger.log_journey_completion(
-        journey_id=journey_id,
-        final_response={"error": "Failed to process query"},
-        total_time=1.234,
-        success=False
-    )
-
-    print(f"❌ Error journey completed: {journey_id}\n")
     return journey_id
 
 
 def example_view_logs():
     """
-    Demonstrate viewing and analyzing logs.
+    View and analyze logs.
     """
 
     print("\n" + "=" * 80)
-    print("EXAMPLE 3: VIEWING LOGS")
+    print("VIEWING LOGS")
     print("=" * 80 + "\n")
 
     analyzer = LogAnalyzer()
@@ -211,22 +160,17 @@ def example_view_logs():
 
     journeys = analyzer.get_all_journeys()
     if journeys:
-        journey_id = journeys[0]["journey_id"]
-        analyzer.print_journey_details(journey_id)
+        analyzer.print_journey_details(journeys[0]["journey_id"])
 
 
 def main():
-    journey_id_1 = example_journey_simulation()
-    example_with_error()
+    journey_id = example_journey_simulation()
     example_view_logs()
 
     print("\n" + "=" * 80)
     print("QUICK START COMPLETE!")
     print("=" * 80)
-    print("\nNext steps:")
-    print("1. Inspect logs/ directory")
-    print("2. Read INTEGRATION_GUIDE.md")
-    print(f"3. View journey: python logger_utils.py show {journey_id_1}\n")
+    print(f"View journey:\npython logger_utils.py show {journey_id}\n")
 
 
 if __name__ == "__main__":
