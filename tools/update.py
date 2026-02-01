@@ -1,9 +1,6 @@
 import requests
 from urllib.parse import urlencode
-from mcp.server.fastmcp import FastMCP
 from typing import Optional
-
-mcp = FastMCP("Smart Researcher")
 
 BASE_URL = "http://localhost/CMServiceAPI"
 
@@ -27,28 +24,12 @@ def _normalize_types_in_dict(d: dict, keys: tuple):
             d[k] = _normalize_type_token(d[k])
 
 
-@mcp.tool()
-def update_record(
+def _update_record_core(
     path: str = "Record/",
     parameters_to_search: Optional[dict] = None,
     parameters_to_update: Optional[dict] = None,
 ):
-    """
-    MCP tool to perform UPDATE based on an action plan.
-
-    parameters_to_search (optional): any of
-        number, combinedtitle, type, createdon, editstatus
-
-    parameters_to_update (required): any of
-        RecordNumber, RecordTitle, RecordRecordType, RecordDateCreated, RecordEditState
-
-    Behavior:
-      - If parameters_to_search provided, perform a search (GET) and attempt to extract record ids.
-      - If record ids found, perform PUT /Record/{record_id} with parameters_to_update JSON.
-      - If no record ids found but parameters_to_search provided, POST to /Record with {"search":..., "update":...}
-        so server can apply updates server-side.
-      - If no parameters_to_search, attempt to use an explicit id from parameters_to_update (RecordNumber / RecordID).
-    """
+    """Core UPDATE logic: search then PUT or server-side POST."""
 
     if not parameters_to_update or not isinstance(parameters_to_update, dict):
         return {"error": "parameters_to_update is required and must be a dict."}
@@ -159,3 +140,18 @@ def update_record(
 
     # Fallback (shouldn't normally reach here)
     return {"error": "Could not determine update path."}
+
+
+async def update_record_impl(action_plan: dict):
+    """
+    MCP-style implementation: accepts action_plan dict.
+    Extracts parameters_to_search and parameters_to_update from action_plan.
+    """
+    path = action_plan.get("path", "Record/")
+    parameters_to_search = action_plan.get("parameters_to_search")
+    parameters_to_update = action_plan.get("parameters_to_update")
+    return _update_record_core(
+        path=path,
+        parameters_to_search=parameters_to_search,
+        parameters_to_update=parameters_to_update,
+    )

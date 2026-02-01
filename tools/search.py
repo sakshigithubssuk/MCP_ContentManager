@@ -1,21 +1,15 @@
-from mcp.server.fastmcp import FastMCP
 import requests
 from urllib.parse import urlencode
-
-mcp = FastMCP()
 
 BASE_URL = "http://localhost/CMServiceAPI/Record?q="
 
 
-@mcp.tool()
-async def search_records(action_plan: dict) -> dict:
+async def search_records_impl(action_plan: dict) -> dict:
     """
     Search records in Content Manager.
-
-    Args:
-        action_plan: Action plan with query parameters.
+    MCP-style implementation: accepts action_plan dict.
     """
-
+    print("-------------------------------- Inside search_records_impl --------------------------------", flush=True)
     parameters = action_plan.get("parameters", {})
 
     if not parameters:

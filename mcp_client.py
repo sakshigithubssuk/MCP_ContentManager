@@ -1,6 +1,12 @@
+import anyio
+
 from agent.agent import Agent
-from tools.search import search_records
-import asyncio
+
+
+async def run_query(user_query: str):
+    """Run agent in anyio context so MCP stdio_client (anyio-based) works."""
+    agent = Agent()
+    return await agent.handle_query(user_query)
 
 
 def main():
@@ -17,8 +23,8 @@ def main():
 
         print("\n--- Sending query to Agent ---")
 
-        # Run the asynchronous handle_query method
-        response = asyncio.run(agent.handle_query(user_query))
+        # MCP stdio_client requires anyio event loop (spawns process, task groups)
+        response = anyio.run(run_query, user_query, backend="asyncio")
 
         print("\n--- Final Response Stored in Variable 'response' ---")
         print(response)
