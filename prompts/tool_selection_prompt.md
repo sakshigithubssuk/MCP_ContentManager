@@ -24,9 +24,11 @@ Always set format = "json", properties = "NameString", method = "GET", path = "R
 
 If the user explicitly provides record number, record title, record type, created date, or status, include those keys only in parameters with the exact names number, combinedtitle, type, createdon, editstatus and the values the user gave.
 
-IMPORTANT: Remember to keep the user provided values before format and properties. Also Do NOT add these keys otherwise, means if user didn't provide value of that key then do not include in json, and do not invent or default values, DON'T use values like None or Null.
+IMPORTANT: Remember to keep the user provided values before format and properties. Also Do NOT add these keys otherwise, means if user didn't provide value of that key then do not include in json, and do not invent or default values, DON'T use values like None or Null. Always use mm/dd/yyyy format.
 
-Normalize type tokens (case-insensitive) — e.g. "document", "doc", "docs", "file" → "Document"; "folder", "dir", "directory" → "Folder". Include type only if the user mentioned a type token. Example: phrases like "this document" or "I want this document" imply "type":"Document" for SEARCH.
+Normalize type tokens (case-insensitive) — e.g. "document", "doc", "docs", "file" : "Document"; "folder", "dir", "directory" : "Folder". Include type only if the user mentioned a type token. Example: phrases like "this document" or "I want this document" imply "type":"Document" for SEARCH.
+
+
 
 CREATE
 
@@ -36,66 +38,158 @@ Return this shape:
   "path":"Record/",
   "method":"POST",
   "parameters":{
-    "RecordRecordType":"Document"|"Folder",
+    "RecordRecordType":<extracted_type>,
     "RecordTitle":"<extracted_title>"
   },
   "operation":"CREATE"
 }
 
+ALWAYS INCLUDE THESE FIELDS (no exceptions):
 
-Infer RecordType from user tokens ("document"/"doc"/"file" → Document; "folder"/"dir" → Folder). Default to "Document" only if creating and the type is genuinely ambiguous.
+"path" : "Record/"
+"method" : "POST"
+"operation" : "CREATE"
 
-Extract a clear RecordTitle from the query. Always use method = "POST" and path = "Record/".
+PARAMETERS OBJECT RULES:
+"parameters" must exist only if at least one valid parameter is extracted
+If no parameters are extracted, return:
+"parameters": {}
 
-Also add RecordNumber, RecordDateCreated and RecordEditState if these are provided in the user query.
+OPTIONAL PARAMETERS (STRICT EXTRACTION RULES)
+Include a parameter ONLY IF the user explicitly provides a value.
+
+"RecordTitle"
+Include only if the user clearly states a title or name.
+The value must be exactly what the user provided.
+
+Do NOT infer titles from phrases like:
+"create a record"
+"add a record"
+"make a new record"
+
+
+"RecordRecordType"
+Include only if the user explicitly mentions a type.
+Allowed mappings:
+"document", "doc", "file" -> "Document"
+"folder", "dir" -> "Folder"
+Do NOT assume a type.
+
+
+"RecordNumber", "RecordDateCreated", "RecordEditState"
+Include only if explicitly provided by the user.
+
+ABSOLUTE RULES (VERY IMPORTANT):
+NEVER add keys with empty strings
+NEVER add keys with null, None, or placeholders
+NEVER invent, infer, guess, or default values
+NEVER convert generic phrases into titles
+
+If a value is not provided : DO NOT include the key
+Output valid JSON only, no explanation text
+
+Don't reply anything except json format
+
+
+
+
 
 UPDATE
 
-Return this shape when intent is update:
+If and only if the user intent is UPDATE, follow the rules below.
+
+Mandatory rule
+IMPORTANT - Don't reply anything except json format
 
 {
-  "path":"Record/",
-  "method":"POST",
-  "parameters_to_search":{
-    // include only the keys the user supplied
-    "number":"<value_if_provided>",
-    "combinedtitle":"<value_if_provided>",
-    "type":"<value_if_provided>",
-    "createdon":"<value_if_provided>",
-    "editstatus":"<value_if_provided>"
+  "path": "Record/",
+  "method": "POST",
+  "parameters_to_search": {
+    "number": <value entered by user>,
+    "combinedtitle": <value entered by user>,
+    "type": <value entered by user>,
+    "createdon": <value entered by user>,
+    "editstatus": <value entered by user>,
+    "format": "json",
+    "properties": "NameString"
   },
-  "parameters_to_update":{
-    // include only the keys the user supplied
-    "RecordNumber":"<value_if_provided>",
-    "RecordTitle":"<value_if_provided>",
-    "RecordRecordType":"<value_if_provided>",
-    "RecordDateCreated":"<value_if_provided>",
-    "RecordEditState":"<value_if_provided>"
+  "parameters_to_update": {
+    "RecordNumber": "<value_if_provided>",
+    "RecordTitle": "<value_if_provided>",
+    "RecordRecordType": "<value_if_provided>",
+    "RecordDateCreated": "<value_if_provided>",
+    "RecordEditState": "<value_if_provided>"
   },
-  "operation":"UPDATE"
+  "operation": "UPDATE"
 }
 
 
-Include any parameters_to_search keys only if the user mentioned those search attributes (number, combinedtitle, type, createdon, editstatus). Do not add absent keys.
+SEARCH rules for UPDATE (parameters_to_search)
 
-Include any parameters_to_update keys only if the user requested those updates (RecordNumber, RecordTitle, RecordRecordType, RecordDateCreated, RecordEditState). Do not invent or default values.
+Always include:
+"format": "json"
+"properties": "NameString"
 
-When normalizing a user-supplied type token in either section, map it deterministically to "Document" or "Folder" (case-insensitive, accept plural/abbreviations).
+Do NOT include any other search keys unless explicitly provided by the user.
+Do NOT invent or default values.
+Do NOT include empty keys.
 
-Always set method = "PUT" and include "operation":"UPDATE".
+Allowed search keys ONLY if the user explicitly provided them:
+number
+combinedtitle
+type
+createdon
+editstatus
 
-GENERAL
+Normalization & validation rules
+type must normalize to exactly "Document" or "Folder"
+->Case-insensitive
+->Accept plural or common abbreviations
+(doc, docs, file → Document; folder, dir, directory → Folder)
 
-Return ONLY valid JSON (the action plan). Do not add explanations or comments.
+editstatus must be a STRING and must be either:
+"checkin"
+"checkout"
 
-Always include the "operation" field.
+createdon must be a valid date string in mm/dd/yyyy format
+Preserve the exact user-provided value after normalization
 
-When normalizing types, use only the exact values "Document" or "Folder".
+IMPORTANT: Remember to keep the user provided values before format and properties. Also Do NOT add these keys otherwise, means if user didn't provide value of that key then do not include in json, and do not invent or default values, DON'T use values like None or Null. Always use mm/dd/yyyy format. Also add "format": "json", "properties": "NameString" at last.
 
-Do not invent values or keys the user did not provide.
 
-Context placeholders (must remain available for generation):
 
-The user's intent is: {user_intent}
-The user's query is: {user_query}
+UPDATE rules (parameters_to_update)
+IMPORTANT - Don't reply anything except json format
+
+Include keys ONLY if the user explicitly requested that update
+
+Allowed update keys (use exact spelling and casing):
+RecordNumber
+RecordTitle
+RecordRecordType
+RecordDateCreated
+RecordEditState
+
+Do NOT invent, infer, or default values
+Do NOT include empty keys
+Values must be exactly what the user requested
+
+Fixed values (always enforce)
+"method": "POST"
+"path": "Record/"
+"operation": "UPDATE"
+
+-- General constraints (STRICT)
+Return ONLY JSON
+No comments
+No explanations
+No placeholders like null, None, or empty strings
+Always include "operation": "UPDATE"
+Preserve user-provided values exactly after normalization
+
+-- Context (for reasoning only — DO NOT output)
+User intent: {user_intent}
+User query: {user_query}
 Retrieved tools/docs: {retrieved_docs}
+
+IMPORTANT - Don't reply anything except json format
